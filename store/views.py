@@ -1,8 +1,58 @@
 from django.shortcuts import redirect, render
+from django.contrib.auth.decorators import login_required
 
 # Create your views here.
 from django.shortcuts import render, get_object_or_404
 from .models import Product
+from django.core.mail import send_mail
+from .forms import CheckoutForm
+from .models import Order, OrderItem
+
+
+@login_required
+def order_history(request):
+    orders = Order.objects.filter(user=request.user).order_by("-created_at")
+    return render(request, "store/order_history.html", {"orders": orders})
+
+
+def checkout(request):
+    cart = request.session.get("cart", {})
+    if not cart:
+        return redirect("product_list")
+
+    if request.method == "POST":
+        form = CheckoutForm(request.POST)
+        if form.is_valid():
+            total = sum(item["price"] * item["quantity"] for item in cart.values())
+            order = Order.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                full_name=form.cleaned_data["full_name"],
+                email=form.cleaned_data["email"],
+                address=form.cleaned_data["address"],
+                total_price=total,
+            )
+            for pid, item in cart.items():
+                product = Product.objects.get(id=pid)
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=item["quantity"],
+                    price=item["price"],
+                )
+
+            # Clear cart after order
+            request.session["cart"] = {}
+            send_mail(
+                subject="Order Confirmation",
+                message=f'Thank you {form.cleaned_data["full_name"]}, your order #{order.id} was placed!',
+                from_email="noreply@yourecom.com",
+                recipient_list=[form.cleaned_data["email"]],
+            )
+            return render(request, "store/order_success.html", {"order": order})
+    else:
+        form = CheckoutForm()
+
+    return render(request, "store/checkout.html", {"form": form, "cart": cart})
 
 
 def product_list(request):

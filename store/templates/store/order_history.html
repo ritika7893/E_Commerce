@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Products</title>
+</head>
+
+<body>
+    <h1>Your Orders</h1>
+    {% for order in orders %}
+    <div>
+        <strong>Order #{{ order.id }}</strong> – ₹{{ order.total_price }}<br>
+        {{ order.created_at|date:"Y-m-d H:i" }}<br>
+        <ul>
+            {% for item in order.items.all %}
+            <li>{{ item.product.name }} x {{ item.quantity }} - ₹{{ item.price }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <hr>
+    {% empty %}
+    <p>No orders yet.</p>
+    {% endfor %}
+</body>
+
+</html>

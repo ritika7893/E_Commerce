@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 
 # Create your views here.
 from django.shortcuts import render, get_object_or_404
-from .models import Product
+from .models import Product, Category
 from django.core.mail import send_mail
 from .forms import CheckoutForm
 from .models import Order, OrderItem
@@ -57,7 +57,12 @@ def checkout(request):
 
 def product_list(request):
     products = Product.objects.all()
-    return render(request, "store/product_list.html", {"products": products})
+
+    return render(
+        request,
+        "store/product_list.html",
+        {"products": products},
+    )
 
 
 def product_detail(request, pk):
